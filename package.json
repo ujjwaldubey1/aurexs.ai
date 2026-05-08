@@ -1,0 +1,26 @@
+{
+  "name": "jewellery-erp",
+  "version": "0.1.0",
+  "description": "Focused ERP for jewellery stores",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @jewellery-erp/web run dev",
+    "dev:api": "npm --workspace @jewellery-erp/api run dev",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "build": "npm run --workspaces --if-present build",
+    "lint": "npm run --workspaces --if-present lint",
+    "typecheck": "npm run --workspaces --if-present typecheck",
+    "db:generate": "npm --workspace @jewellery-erp/db run db:generate",
+    "db:migrate": "npm --workspace @jewellery-erp/db run db:migrate",
+    "db:seed": "npm --workspace @jewellery-erp/db run db:seed"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.3"
+  }
+}

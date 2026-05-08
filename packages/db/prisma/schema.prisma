@@ -1,0 +1,314 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  OWNER
+  MANAGER
+  STAFF
+  KARIGAR
+}
+
+enum MetalType {
+  GOLD
+  SILVER
+  DIAMOND
+}
+
+enum ItemStatus {
+  IN_STOCK
+  WITH_KARIGAR
+  ON_APPROVAL
+  IN_REPAIR
+  SOLD
+  RETURNED_TO_SUPPLIER
+}
+
+enum TransactionType {
+  SALE
+  PURCHASE
+  REPAIR
+  PAYMENT_IN
+  PAYMENT_OUT
+  STATUS_CHANGE
+}
+
+enum PartyType {
+  CUSTOMER
+  SUPPLIER
+  KARIGAR
+  LEDGER_ACCOUNT
+}
+
+enum PaymentMode {
+  CASH
+  BANK_TRANSFER
+  CARD
+  UPI
+  MIXED
+}
+
+enum LedgerAccountType {
+  ASSET
+  LIABILITY
+  INCOME
+  EXPENSE
+  EQUITY
+}
+
+enum KarigarJobStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum RepairStatus {
+  RECEIVED
+  ASSIGNED
+  IN_PROGRESS
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+model Tenant {
+  id         String         @id @default(cuid())
+  name       String
+  gstin      String?        @db.VarChar(15)
+  address    String?
+  logoUrl    String?
+  plan       String         @default("core")
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  users      User[]
+  items      Item[]
+  karigars   Karigar[]
+  jobs       KarigarJob[]
+  customers  Customer[]
+  suppliers  Supplier[]
+  txns       Transaction[]
+  accounts   LedgerAccount[]
+  entries    LedgerEntry[]
+  goldRates  GoldRate[]
+  repairs    Repair[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  phone     String   @db.VarChar(20)
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdItems Item[] @relation("UserCreatedItems")
+  txns        Transaction[] @relation("UserCreatedTransactions")
+}
+
+model Item {
+  id             String      @id @default(cuid())
+  tenantId       String
+  itemCode       String
+  category       String
+  metal          MetalType
+  grossWt        Decimal     @db.Decimal(18, 3)
+  netWt          Decimal     @db.Decimal(18, 3)
+  purity         Decimal     @db.Decimal(5, 2)
+  makingCharges  Decimal     @db.Decimal(18, 2) @default(0)
+  rateAtPurchase Decimal?    @db.Decimal(18, 2)
+  status         ItemStatus  @default(IN_STOCK)
+  location       String?
+  hsnCode        String?     @db.VarChar(8)
+  createdById    String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  tenant         Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy      User?       @relation("UserCreatedItems", fields: [createdById], references: [id], onDelete: SetNull)
+  jobLinks       KarigarJobItem[]
+  txnItems       TransactionItem[]
+
+  @@unique([tenantId, itemCode])
+  @@index([tenantId, status])
+}
+
+model Karigar {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  phone     String?  @db.VarChar(20)
+  address   String?
+  skill     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jobs      KarigarJob[]
+  repairs   Repair[]
+}
+
+model KarigarJob {
+  id             String           @id @default(cuid())
+  tenantId       String
+  karigarId      String
+  metal          MetalType
+  issuedWt       Decimal          @db.Decimal(18, 3)
+  issuedPurity   Decimal          @db.Decimal(5, 2)
+  returnedWt     Decimal?         @db.Decimal(18, 3)
+  returnedPurity Decimal?         @db.Decimal(5, 2)
+  wastageAgreed  Decimal?         @db.Decimal(5, 2)
+  status         KarigarJobStatus @default(OPEN)
+  openedAt       DateTime         @default(now())
+  closedAt       DateTime?
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  karigar        Karigar          @relation(fields: [karigarId], references: [id], onDelete: Restrict)
+  items          KarigarJobItem[]
+
+  @@index([tenantId, status])
+}
+
+model KarigarJobItem {
+  id     String @id @default(cuid())
+  jobId  String
+  itemId String
+  job    KarigarJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  item   Item       @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@unique([jobId, itemId])
+  @@index([itemId])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  phone     String   @db.VarChar(20)
+  email     String?
+  address   String?
+  anniversary DateTime?
+  dob       DateTime?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  repairs   Repair[]
+
+  @@index([tenantId, phone])
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  phone     String?  @db.VarChar(20)
+  gstin     String?  @db.VarChar(15)
+  address   String?
+  balance   Decimal  @db.Decimal(18, 2) @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  tenantId    String
+  type        TransactionType
+  partyType   PartyType?
+  partyId     String?
+  totalAmount Decimal         @db.Decimal(18, 2)
+  paymentMode PaymentMode?
+  notes       String?
+  createdById String?
+  createdAt   DateTime        @default(now())
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy   User?           @relation("UserCreatedTransactions", fields: [createdById], references: [id], onDelete: SetNull)
+  items       TransactionItem[]
+  entries     LedgerEntry[]
+
+  @@index([tenantId, type, createdAt])
+}
+
+model TransactionItem {
+  id             String      @id @default(cuid())
+  transactionId  String
+  itemId         String?
+  grossWt        Decimal?    @db.Decimal(18, 3)
+  purity         Decimal?    @db.Decimal(5, 2)
+  rate           Decimal?    @db.Decimal(18, 2)
+  makingCharges  Decimal?    @db.Decimal(18, 2)
+  amount         Decimal     @db.Decimal(18, 2)
+  transaction    Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  item           Item?       @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@index([transactionId])
+}
+
+model LedgerAccount {
+  id        String             @id @default(cuid())
+  tenantId  String
+  name      String
+  type      LedgerAccountType
+  parentId  String?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent    LedgerAccount?     @relation("LedgerAccountHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children  LedgerAccount[]    @relation("LedgerAccountHierarchy")
+  entries   LedgerEntry[]
+
+  @@unique([tenantId, name])
+}
+
+model LedgerEntry {
+  id            String       @id @default(cuid())
+  tenantId      String
+  accountId     String
+  debit         Decimal      @db.Decimal(18, 2) @default(0)
+  credit        Decimal      @db.Decimal(18, 2) @default(0)
+  narration     String?
+  transactionId String?
+  date          DateTime     @default(now())
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account       LedgerAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, date])
+}
+
+model GoldRate {
+  id          String    @id @default(cuid())
+  tenantId    String
+  date        DateTime
+  metal       MetalType
+  purity      Decimal   @db.Decimal(5, 2)
+  ratePerGram Decimal   @db.Decimal(18, 2)
+  source      String?
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, date, metal])
+}
+
+model Repair {
+  id          String       @id @default(cuid())
+  tenantId    String
+  customerId  String
+  karigarId   String?
+  description String
+  photoUrls   String[]
+  charge      Decimal?     @db.Decimal(18, 2)
+  status      RepairStatus @default(RECEIVED)
+  receivedAt  DateTime     @default(now())
+  promisedAt  DateTime?
+  deliveredAt DateTime?
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  karigar     Karigar?     @relation(fields: [karigarId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status])
+}

@@ -1,0 +1,303 @@
+openapi: 3.0.3
+info:
+  title: Jewellery ERP API
+  version: 0.1.0
+  description: >
+    Phase 1 API for single-store jewellery ERP. Gold loans, interest logic,
+    and multi-branch flows are explicitly excluded.
+servers:
+  - url: http://localhost:4000
+paths:
+  /health:
+    get:
+      tags: [system]
+      summary: Service health check
+      responses:
+        "200":
+          description: Healthy
+  /auth/session:
+    post:
+      tags: [auth]
+      summary: Verify OTP and create session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpVerifyRequest"
+      responses:
+        "200":
+          description: Session created
+  /inventory/items:
+    get:
+      tags: [inventory]
+      summary: List items
+      responses:
+        "200":
+          description: Item list
+    post:
+      tags: [inventory]
+      summary: Create item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateItemRequest"
+      responses:
+        "201":
+          description: Item created
+  /inventory/items/{itemId}/status:
+    patch:
+      tags: [inventory]
+      summary: Change item status with transaction and ledger posting
+      parameters:
+        - in: path
+          name: itemId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemStatusChangeRequest"
+      responses:
+        "200":
+          description: Status updated
+  /karigar-jobs:
+    get:
+      tags: [karigar]
+      summary: List karigar jobs
+      responses:
+        "200":
+          description: Job list
+    post:
+      tags: [karigar]
+      summary: Create karigar job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKarigarJobRequest"
+      responses:
+        "201":
+          description: Job created
+  /karigar-jobs/{jobId}/close:
+    post:
+      tags: [karigar]
+      summary: Close karigar job
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job closed
+  /sales:
+    post:
+      tags: [sales]
+      summary: Record sale transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSaleRequest"
+      responses:
+        "201":
+          description: Sale recorded
+  /purchases:
+    post:
+      tags: [purchases]
+      summary: Record purchase transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePurchaseRequest"
+      responses:
+        "201":
+          description: Purchase recorded
+  /customers:
+    get:
+      tags: [customers]
+      summary: List customers
+      responses:
+        "200":
+          description: Customer list
+    post:
+      tags: [customers]
+      summary: Create customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCustomerRequest"
+      responses:
+        "201":
+          description: Customer created
+  /repairs:
+    get:
+      tags: [repairs]
+      summary: List repairs
+      responses:
+        "200":
+          description: Repairs list
+    post:
+      tags: [repairs]
+      summary: Intake repair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRepairRequest"
+      responses:
+        "201":
+          description: Repair created
+  /ledger/day-book:
+    get:
+      tags: [ledger]
+      summary: Day book entries
+      responses:
+        "200":
+          description: Day book response
+  /reports/stock-summary:
+    get:
+      tags: [reports]
+      summary: Stock summary report
+      responses:
+        "200":
+          description: Stock summary response
+  /reports/gstr1:
+    get:
+      tags: [gst]
+      summary: Export GSTR-1 (should-have)
+      responses:
+        "200":
+          description: File export
+  /reports/gstr3b:
+    get:
+      tags: [gst]
+      summary: Export GSTR-3B (should-have)
+      responses:
+        "200":
+          description: File export
+  /gold-rates/latest:
+    get:
+      tags: [gold-rates]
+      summary: Latest cached metal rates
+      responses:
+        "200":
+          description: Rate list
+components:
+  schemas:
+    OtpVerifyRequest:
+      type: object
+      required: [phone, otp]
+      properties:
+        phone:
+          type: string
+        otp:
+          type: string
+    CreateItemRequest:
+      type: object
+      required: [itemCode, category, metal, grossWt, netWt, purity]
+      properties:
+        itemCode:
+          type: string
+        category:
+          type: string
+        metal:
+          type: string
+          enum: [GOLD, SILVER, DIAMOND]
+        grossWt:
+          type: number
+        netWt:
+          type: number
+        purity:
+          type: number
+        makingCharges:
+          type: number
+        rateAtPurchase:
+          type: number
+    ItemStatusChangeRequest:
+      type: object
+      required: [nextStatus, reason]
+      properties:
+        nextStatus:
+          type: string
+          enum:
+            [IN_STOCK, WITH_KARIGAR, ON_APPROVAL, IN_REPAIR, SOLD, RETURNED_TO_SUPPLIER]
+        reason:
+          type: string
+    CreateKarigarJobRequest:
+      type: object
+      required: [karigarId, metal, issuedWt, issuedPurity]
+      properties:
+        karigarId:
+          type: string
+        metal:
+          type: string
+          enum: [GOLD, SILVER, DIAMOND]
+        issuedWt:
+          type: number
+        issuedPurity:
+          type: number
+        wastageAgreed:
+          type: number
+    CreateSaleRequest:
+      type: object
+      required: [customerId, items, paymentMode]
+      properties:
+        customerId:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+        paymentMode:
+          type: string
+          enum: [CASH, BANK_TRANSFER, CARD, UPI, MIXED]
+    CreatePurchaseRequest:
+      type: object
+      required: [supplierId, lines, paymentMode]
+      properties:
+        supplierId:
+          type: string
+        lines:
+          type: array
+          items:
+            type: object
+        paymentMode:
+          type: string
+    CreateCustomerRequest:
+      type: object
+      required: [name, phone]
+      properties:
+        name:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+    CreateRepairRequest:
+      type: object
+      required: [customerId, description]
+      properties:
+        customerId:
+          type: string
+        karigarId:
+          type: string
+        description:
+          type: string
+        promisedAt:
+          type: string
+          format: date-time
