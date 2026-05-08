@@ -1,0 +1,12 @@
+{
+  "name": "@jewellery-erp/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo \"Mobile scaffold only in Phase 2\"",
+    "build": "echo \"No mobile build yet\"",
+    "lint": "echo \"No lint step for mobile package\"",
+    "typecheck": "echo \"No typecheck step for mobile package\"",
+    "test": "echo \"No tests yet for mobile package\""
+  }
+}

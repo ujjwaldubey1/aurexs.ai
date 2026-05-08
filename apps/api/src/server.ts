@@ -1,18 +1,84 @@
 import Fastify from "fastify";
+import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
+import { z } from "zod";
 import { prisma } from "@jewellery-erp/db";
-import { initSentry } from "./plugins/sentry.js";
-import { getSupabaseAdminClient } from "./lib/supabase.js";
+import { initSentry, captureApiError } from "./plugins/sentry.js";
+import { getSupabaseAdminClient, getSupabasePublicClient } from "./lib/supabase.js";
+import { attachAuthContext, requireRoles } from "./plugins/auth.js";
 
-const app = Fastify({ logger: true });
+const app = Fastify({
+  logger: {
+    level: process.env.NODE_ENV === "production" ? "info" : "debug",
+    transport:
+      process.env.NODE_ENV === "production"
+        ? undefined
+        : {
+            target: "pino-pretty",
+            options: { colorize: true }
+          }
+  }
+});
 
 initSentry();
 
 app.register(cors, { origin: true });
+app.register(cookie);
+app.register(swagger, {
+  openapi: {
+    info: {
+      title: "Jewellery ERP API",
+      version: "0.2.0"
+    }
+  }
+});
+app.register(swaggerUi, { routePrefix: "/docs" });
+
+const otpVerifySchema = z.object({
+  phone: z.string().min(8),
+  otp: z.string().min(4)
+});
 
 app.get("/health", async () => {
   await prisma.$queryRaw`SELECT 1`;
   return { ok: true };
+});
+
+app.post("/auth/session", async (request, reply) => {
+  const parseResult = otpVerifySchema.safeParse(request.body);
+  if (!parseResult.success) {
+    return reply.code(400).send({
+      code: "VALIDATION_ERROR",
+      message: "Invalid payload",
+      issues: parseResult.error.issues
+    });
+  }
+
+  const supabase = getSupabasePublicClient();
+  if (!supabase) {
+    return reply.code(500).send({ code: "AUTH_NOT_CONFIGURED", message: "Supabase auth not configured" });
+  }
+
+  const { phone, otp } = parseResult.data;
+  const { data, error } = await supabase.auth.verifyOtp({
+    phone,
+    token: otp,
+    type: "sms"
+  });
+  if (error || !data.session) {
+    return reply.code(401).send({ code: "OTP_FAILED", message: error?.message || "OTP failed" });
+  }
+
+  reply.setCookie("sb-access-token", data.session.access_token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: data.session.expires_in
+  });
+  return reply.code(200).send({ ok: true });
 });
 
 app.get("/health/supabase", async (_request, reply) => {
@@ -38,11 +104,27 @@ app.get("/health/supabase", async (_request, reply) => {
   return reply.code(200).send({ ok: true, configured: true });
 });
 
-app.get("/inventory/items", async () => {
-  return prisma.item.findMany({ take: 50, orderBy: { createdAt: "desc" } });
-});
+app.get(
+  "/inventory/items",
+  { preHandler: [attachAuthContext, requireRoles(["OWNER", "MANAGER", "STAFF"])] },
+  async (request) => {
+    return prisma.item.findMany({
+      where: { tenantId: request.auth?.tenantId },
+      take: 50,
+      orderBy: { createdAt: "desc" }
+    });
+  }
+);
 
 const port = Number(process.env.PORT || 4000);
+app.setErrorHandler((error, _request, reply) => {
+  captureApiError(error);
+  reply.code(500).send({
+    code: "INTERNAL_ERROR",
+    message: "Unexpected server error"
+  });
+});
+
 app
   .listen({ port, host: "0.0.0.0" })
   .then(() => {

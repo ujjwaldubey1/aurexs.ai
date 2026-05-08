@@ -7,12 +7,15 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "echo \"No lint step for web package\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"Web unit tests pending\""
   },
   "dependencies": {
     "next": "^14.2.24",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "@supabase/supabase-js": "^2.105.3",
+    "@jewellery-erp/shared": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.17",

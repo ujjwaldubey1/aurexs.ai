@@ -7,3 +7,8 @@ coverage
 apps/web/.env.local
 apps/api/.env
 *.log
+.turbo
+test-results
+playwright-report
+blob-report
+*.tsbuildinfo

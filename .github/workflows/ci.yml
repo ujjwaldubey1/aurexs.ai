@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
 
 jobs:
@@ -30,5 +30,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Unit Tests
+        run: npm run test
+
       - name: Build
         run: npm run build
+
+      - name: Install Playwright Browsers
+        if: ${{ github.event_name == 'pull_request' }}
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E Smoke
+        if: ${{ github.event_name == 'pull_request' }}
+        run: npm run test:e2e

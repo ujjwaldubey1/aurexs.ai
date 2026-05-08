@@ -49,6 +49,15 @@ Focused ERP for jewellery stores covering inventory, billing, karigar workflow, 
 1. Copy Supabase env values into `.env`, `apps/web/.env.local`, and `apps/api/.env`.
 2. Run `supabase/bootstrap.sql` in Supabase SQL Editor.
 3. Hit `GET /health/supabase` from API to verify server-side connectivity.
+4. Use `POST /auth/session` and web `/login` for OTP auth flow.
+
+## Phase 2 Foundation Additions
+- Turborepo orchestration via `turbo.json`
+- Supabase OTP auth + tenant/role context middleware
+- Swagger docs endpoint: `/docs`
+- Structured API logging via Pino
+- Vitest and Playwright baseline tests
+- Prisma migration workflow docs: `docs/architecture/migrations.md`
 
 ## Development Commands
 - `npm run lint`

@@ -8,6 +8,13 @@ info:
 servers:
   - url: http://localhost:4000
 paths:
+  /docs:
+    get:
+      tags: [system]
+      summary: Fastify Swagger UI
+      responses:
+        "200":
+          description: API docs UI
   /health:
     get:
       tags: [system]
@@ -32,6 +39,8 @@ paths:
     get:
       tags: [inventory]
       summary: List items
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Item list
@@ -198,6 +207,11 @@ paths:
         "200":
           description: Rate list
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     OtpVerifyRequest:
       type: object

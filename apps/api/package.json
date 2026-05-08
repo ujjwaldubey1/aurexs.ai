@@ -8,16 +8,22 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "lint": "echo \"No lint step for api package\"",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --coverage"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.2",
+    "@supabase/supabase-js": "^2.105.3",
     "fastify": "^5.2.1",
     "zod": "^3.24.2",
-    "@jewellery-erp/db": "^0.1.0"
+    "@jewellery-erp/db": "^0.1.0",
+    "@jewellery-erp/shared": "^0.1.0"
   },
   "devDependencies": {
     "tsx": "^4.19.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.5"
   }
 }

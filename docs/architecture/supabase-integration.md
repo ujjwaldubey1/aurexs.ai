@@ -6,6 +6,8 @@ This project now supports Supabase as the PostgreSQL backend plus Data API/Auth 
 - Frontend Supabase client: `apps/web/lib/supabase.ts`
 - Backend admin Supabase client: `apps/api/src/lib/supabase.ts`
 - Supabase health endpoint: `GET /health/supabase`
+- Auth session endpoint: `POST /auth/session`
+- Fastify middleware for JWT + tenant + role context
 - Complete SQL bootstrap for ERP tables and policies: `supabase/bootstrap.sql`
 
 ## Environment Variables

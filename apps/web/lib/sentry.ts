@@ -3,5 +3,5 @@ export function initSentryClient() {
   if (!dsn) {
     return;
   }
-  // Stub for future Sentry browser SDK initialization.
+  // Browser Sentry SDK can be initialized here when UI error boundaries are added.
 }
