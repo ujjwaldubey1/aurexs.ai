@@ -1,5 +1,8 @@
 export type UserRole = "OWNER" | "MANAGER" | "STAFF" | "KARIGAR";
 
+/** Matches Prisma seed tenant in packages/db/prisma/seed.ts */
+export const DEV_SEED_TENANT_ID = "seed-tenant-core";
+
 export interface RequestContext {
   userId: string;
   tenantId: string;

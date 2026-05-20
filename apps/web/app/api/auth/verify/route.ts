@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { syncDevTenantAndRefreshSession } from "../../../../lib/sync-tenant-metadata";
 
 const cookieName = "sb-access-token";
 
@@ -26,13 +27,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, message: error?.message || "OTP verification failed" }, { status: 401 });
   }
 
+  const synced = await syncDevTenantAndRefreshSession(data.session);
+  if (!synced.ok) {
+    return NextResponse.json({ ok: false, message: synced.message }, { status: 500 });
+  }
+
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(cookieName, data.session.access_token, {
+  response.cookies.set(cookieName, synced.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: data.session.expires_in
+    maxAge: synced.expiresIn
   });
   return response;
 }

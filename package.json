@@ -23,7 +23,8 @@
     "db:migrate": "npm --workspace @jewellery-erp/db run db:migrate",
     "db:migrate:deploy": "npm --workspace @jewellery-erp/db run db:migrate:deploy",
     "db:migrate:status": "npm --workspace @jewellery-erp/db run db:migrate:status",
-    "db:seed": "npm --workspace @jewellery-erp/db run db:seed"
+    "db:seed": "npm --workspace @jewellery-erp/db run db:seed",
+    "db:check": "npm --workspace @jewellery-erp/db run db:check"
   },
   "license": "UNLICENSED",
   "dependencies": {

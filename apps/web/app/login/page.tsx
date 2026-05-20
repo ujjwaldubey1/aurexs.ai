@@ -51,7 +51,11 @@ export default function LoginPage() {
       const payload = await readJsonResponse(response);
       if (payload.ok) {
         setMessage("Login success");
-        window.location.href = "/dashboard";
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get("next");
+        const dest =
+          next && next.startsWith("/") && !next.startsWith("//") ? next : "/inventory";
+        window.location.href = dest;
         return;
       }
       setMessage(payload.message || "OTP verification failed");

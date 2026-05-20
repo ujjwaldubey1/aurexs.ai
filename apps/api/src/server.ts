@@ -1,3 +1,4 @@
+import "dotenv/config";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
@@ -8,6 +9,7 @@ import { prisma } from "@jewellery-erp/db";
 import { initSentry, captureApiError } from "./plugins/sentry.js";
 import { getSupabaseAdminClient, getSupabasePublicClient } from "./lib/supabase.js";
 import { attachAuthContext, requireRoles } from "./plugins/auth.js";
+import { syncDevTenantAndRefreshSession } from "./lib/sync-tenant-metadata.js";
 
 const app = Fastify({
   logger: {
@@ -71,12 +73,17 @@ app.post("/auth/session", async (request, reply) => {
     return reply.code(401).send({ code: "OTP_FAILED", message: error?.message || "OTP failed" });
   }
 
-  reply.setCookie("sb-access-token", data.session.access_token, {
+  const synced = await syncDevTenantAndRefreshSession(data.session);
+  if (!synced.ok) {
+    return reply.code(500).send({ code: "METADATA_SYNC_FAILED", message: synced.message });
+  }
+
+  reply.setCookie("sb-access-token", synced.accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: data.session.expires_in
+    maxAge: synced.expiresIn
   });
   return reply.code(200).send({ ok: true });
 });
@@ -108,6 +115,7 @@ app.get(
   "/inventory/items",
   { preHandler: [attachAuthContext, requireRoles(["OWNER", "MANAGER", "STAFF"])] },
   async (request) => {
+    // Tenant scope comes from JWT app_metadata.tenant_id, not query params.
     return prisma.item.findMany({
       where: { tenantId: request.auth?.tenantId },
       take: 50,

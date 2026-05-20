@@ -4,6 +4,7 @@ dist
 coverage
 .env
 .env.local
+packages/db/.env
 apps/web/.env.local
 apps/api/.env
 *.log

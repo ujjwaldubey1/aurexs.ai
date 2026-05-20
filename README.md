@@ -25,31 +25,24 @@ Focused ERP for jewellery stores covering inventory, billing, karigar workflow, 
 
 ## Prerequisites
 - Node.js 20+
-- PostgreSQL 15+
+- [Supabase](https://supabase.com) project (Postgres + Auth). Docker is optional.
 
 ## Setup
-1. Install dependencies:
-   - `npm install`
-2. Copy environment templates:
+1. Install dependencies: `npm install`
+2. Copy env templates:
    - `copy .env.example .env`
-   - `copy apps\\api\\.env.example apps\\api\\.env`
-   - `copy apps\\web\\.env.example apps\\web\\.env.local`
-3. Configure `DATABASE_URL` in `.env` (and `apps/api/.env` if needed).
-4. Generate Prisma client:
-   - `npm run db:generate`
-5. Run migrations:
-   - `npm run db:migrate`
-6. Seed initial data:
-   - `npm run db:seed`
-7. Start services:
-   - API: `npm run dev:api`
-   - Web: `npm run dev:web`
+   - `copy packages\db\.env.example packages\db\.env`
+   - `copy apps\api\.env.example apps\api\.env`
+   - `copy apps\web\.env.example apps\web\.env.local`
+3. Set **Supabase database** URIs (`DATABASE_URL` + `DIRECT_URL`) in `.env`, `packages/db/.env`, and `apps/api/.env` from Dashboard → Database → connection string (see [docs/runbooks/supabase-database.md](docs/runbooks/supabase-database.md)).
+4. `npm run db:generate` → `npm run db:migrate` → `npm run db:seed`
+5. Start: `npm run dev:api` and `npm run dev:web`
 
-## Supabase Setup
-1. Copy Supabase env values into `.env`, `apps/web/.env.local`, and `apps/api/.env`.
-2. Run `supabase/bootstrap.sql` in Supabase SQL Editor.
-3. Hit `GET /health/supabase` from API to verify server-side connectivity.
-4. Use `POST /auth/session` and web `/login` for OTP auth flow.
+## Supabase (Auth + Postgres)
+- **Prisma** owns the app schema via migrations — do not run `supabase/bootstrap.sql` on the same DB unless you intend a separate RLS-only setup.
+- Enable Phone auth; set `SUPABASE_SERVICE_ROLE_KEY` for login tenant metadata.
+- OTP flow: web `/login` or API `POST /auth/session`.
+- Optional local Postgres: `npm run db:up` (Docker) and use localhost `DATABASE_URL` in env files instead.
 
 ## Phase 2 Foundation Additions
 - Turborepo orchestration via `turbo.json`
@@ -58,6 +51,10 @@ Focused ERP for jewellery stores covering inventory, billing, karigar workflow, 
 - Structured API logging via Pino
 - Vitest and Playwright baseline tests
 - Prisma migration workflow docs: `docs/architecture/migrations.md`
+
+## Vertical Slice (Login → Inventory)
+
+See [docs/runbooks/vertical-slice.md](docs/runbooks/vertical-slice.md) and [docs/runbooks/supabase-database.md](docs/runbooks/supabase-database.md) (Supabase Postgres, no Docker).
 
 ## Development Commands
 - `npm run lint`

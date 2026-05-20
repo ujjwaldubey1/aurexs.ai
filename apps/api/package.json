@@ -12,6 +12,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
+    "dotenv": "^16.6.1",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.2",
     "@supabase/supabase-js": "^2.105.3",
